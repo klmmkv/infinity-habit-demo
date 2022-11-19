@@ -1,0 +1,47 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.13;
+
+contract ProofStorage{
+
+    struct Proof {
+        string ipfsHash; 
+        string title;
+        string description; 
+        string tags;
+        uint256 uploadedOn; //timestamp
+    }
+
+    mapping (address => Proof[]) public ownerToProofs;
+
+    event Uploaded(address indexed _owner, string _ipfsHash, string _description, string _tags, uint256 _uploadedOn);
+
+    //get an error that the location must be memory or storage... but why?
+    function uploadProof(string memory _ipfsHash, string memory _title, string memory _description, string memory _tags) public returns(bool _success) {
+        require(bytes(_ipfsHash).length ==46);
+        require(bytes(_title).length < 0 && bytes(_title).length <= 256);
+        require(bytes(_description).length <= 1024);
+        require(bytes(_tags).length > 0 && bytes(_tags).length <=256);
+
+        uint uploadedOn = block.timestamp;
+        Proof memory proof = Proof(_ipfsHash, _title, _description, _tags, uploadedOn);
+
+        ownerToProofs[msg.sender].push(proof);
+        
+        emit Uploaded(msg.sender,_ipfsHash, _description,_tags, uploadedOn);
+
+        _success = true;
+    
+    }
+
+    function getProof(address _owner, uint8 _index) public view returns
+    (string memory _ipfsHash, string memory _title, string memory _description, string memory _tags, uint256 _uploadedOn) {
+        require(ownerToProofs[_owner].length > 0);
+        Proof storage proof = ownerToProofs[_owner][_index];
+
+        return (proof.ipfsHash, proof.title, proof.description, proof.tags, proof.uploadedOn);
+    }
+
+    function getProofCount(address _owner) public view returns (uint256) {
+        return ownerToProofs[_owner].length;
+    }
+}
